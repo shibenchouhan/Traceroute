@@ -7,30 +7,22 @@ Created on Jan 21, 2013
 
 import socket
 from configobj import ConfigObj
+import logging
 
-def write(msg):
-#	global fp_log,console
-	if console == 0:
-		fp_log.write(msg)
-		fp_log.flush()
-	elif console == 1:
-		fp_log.write(msg)
-		fp_log.flush()
-		print msg
-	else:
-		print msg
+log = logging.getLogger(__name__)
+
 		
-def main(dest_name,PortList,timeout):
+def main(dest_name, port_ist, timeout):
 #	dest_addr = socket.gethostbyname(dest_name)
 	dest_addr = dest_name
-	write("Diagnostic Details ........\n")
-	for port in PortList:
+	log.info("Diagnostic Details ........\n")
+	for port in port_list:
 		port = int(port)
-		write("#"*50+ "\n")
-		write("Destination Address=%s \nDestination Port=%d\n"%(dest_addr,port))
+		log.info("#" * 50 + "\n")
+		log.info("Destination Address=%s \nDestination Port=%d\n", dest_addr, port)
 		max_hops = 30
-		icmp = socket.getprotobyname('icmp')
-		udp = socket.getprotobyname('udp')
+		icmp = socket.getprotobyname("icmp")
+		udp = socket.getprotobyname("udp")
 		ttl = 1
 		prev_addr = None
 		curr_addr = None
@@ -49,7 +41,7 @@ def main(dest_name,PortList,timeout):
 				_, curr_addr = recv_socket.recvfrom(512)
 				curr_addr = curr_addr[0]
 				if prev_addr == curr_addr:
-					write("RESULT:Port %d from %s is Unreachable.\n" %(port,curr_addr))
+					log.info("RESULT:Port %d from %s is Unreachable.\n", port, curr_addr)
 					write("#"*50 + "\n")
 					break
 				try:
@@ -58,8 +50,8 @@ def main(dest_name,PortList,timeout):
 					curr_name = curr_addr
 			except socket.error,e:
 				recv_socket.close()
-				write("RESULT:" + str(e)+ ":Port %d from %s is Unreachable.\n" %(port,curr_addr))
-				write("#"*50 + "\n")
+				log.info("RESULT:" + str(e)+ ":Port %d from %s is Unreachable.\n", port, curr_addr)
+				log.info("#" * 50 + "\n")
 				break
 			finally:
 				send_socket.close()
@@ -69,13 +61,13 @@ def main(dest_name,PortList,timeout):
 				curr_host = "%s (%s)" % (curr_name, curr_addr)
 			else:
 				curr_host = "*"
-			write("%d\t%s\n" % (ttl, curr_host))
+			log.info("%d\t%s\n",  ttl, curr_host)
 
 			ttl += 1
 			if curr_addr == dest_addr or ttl >= max_hops:
 				if curr_addr == dest_addr:
-					write("RESULT:Port %d from %s is reachable.\n" %(port,curr_addr))
-					write("#"*50 + "\n" )
+					log.info("RESULT:Port %d from %s is reachable.\n", port, curr_addr)
+					log.info("#" * 50 + "\n")
 					break
 				else:
 					break
@@ -84,8 +76,8 @@ if __name__ == "__main__":
 	config = ConfigObj("config.ini")
 	console = int(config['default']['LogOption'])
 	dest_addr = config['default']['DestinationAddress']
-	PortList = config['default']['Ports']
+	port_list = config['default']['Ports']
 	log_file = config['default']['LogFileName']
 	timeout = int(config['default']['TimeOut'])
 	fp_log = open(log_file,'w+')
-	main(dest_addr,PortList,timeout)
+	main(dest_addr, port_list, timeout)
